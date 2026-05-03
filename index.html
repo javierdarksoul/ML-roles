@@ -137,6 +137,53 @@
   .score-bar-fill { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
   .score-bar-val { width: 30px; text-align: right; color: var(--muted2); font-family: 'Space Mono', monospace; font-size: 10px; }
   footer { max-width: 980px; margin: 5rem auto 0; border-top: 1px solid var(--border); padding-top: 1.5rem; font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+
+  /* LEARNING PATH */
+  .path-role-selector { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2rem; }
+  .path-role-btn {
+    padding: 8px 18px; border-radius: 3px; border: 1px solid var(--border);
+    background: var(--surface); font-family: 'Space Mono', monospace;
+    font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase;
+    color: var(--muted2); cursor: pointer; transition: all 0.18s;
+  }
+  .path-role-btn:hover { border-color: var(--muted2); color: var(--text); }
+  .path-role-btn.active { color: var(--bg); font-weight: 600; }
+  .path-stages { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; margin-bottom: 1.5rem; }
+  @media (max-width: 750px) { .path-stages { grid-template-columns: 1fr; } }
+  .stage-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 6px; padding: 1.4rem 1.2rem; position: relative; overflow: hidden;
+  }
+  .stage-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+  .stage-card.junior::before { background: var(--teal); }
+  .stage-card.mid::before { background: var(--blue); }
+  .stage-card.senior::before { background: var(--purple); }
+  .stage-label {
+    font-family: 'Space Mono', monospace; font-size: 9px;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .stage-label.junior { color: var(--teal); }
+  .stage-label.mid { color: var(--blue); }
+  .stage-label.senior { color: var(--purple); }
+  .stage-title { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 1rem; color: var(--text); margin-bottom: 14px; }
+  .stage-section { margin-bottom: 12px; }
+  .stage-section-title { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; font-family: 'Space Mono', monospace; }
+  .stage-items { display: flex; flex-wrap: wrap; gap: 5px; }
+  .stage-tag {
+    padding: 3px 9px; border-radius: 2px; font-size: 10px;
+    border: 1px solid var(--border); color: var(--muted2); background: var(--surface);
+    font-family: 'Space Mono', monospace;
+  }
+  .stage-tag.concept { border-color: rgba(167,139,250,0.3); color: var(--purple); }
+  .stage-tag.tool { border-color: rgba(56,189,248,0.3); color: var(--blue); }
+  .stage-tag.resource { border-color: rgba(0,255,178,0.3); color: var(--teal); }
+  .path-resources { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 1.4rem 1.2rem; }
+  .path-resources h3 { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 0.95rem; color: var(--text); margin-bottom: 1rem; }
+  .resources-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+  .resource-item { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 10px 12px; }
+  .resource-type { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-family: 'Space Mono', monospace; margin-bottom: 4px; }
+  .resource-name { font-size: 12px; color: var(--text); font-weight: 500; }
 </style>
 <script>
 var isDark = true;
@@ -198,6 +245,7 @@ function toggleTheme() {
   <button class="tab active" onclick="showView('v2',this)">Equipo pequeño / startup</button>
   <button class="tab" onclick="showView('v3',this)">Equipo maduro / escala</button>
   <button class="tab" onclick="showView('vq',this)">¿Cuál es tu perfil?</button>
+  <button class="tab" onclick="showView('vp',this)">Paths de aprendizaje</button>
 </div>
 
 <!-- VIEW 2 -->
@@ -288,7 +336,18 @@ function toggleTheme() {
   </div>
 </div>
 
-<footer>Valores referenciales · Escala 0–10 · Elaborado para uso educativo</footer>
+<!-- VIEW PATH -->
+<div class="view" id="vp">
+  <div class="chart-card" style="margin-bottom:1.5rem;">
+    <div class="chart-title" style="margin-bottom:6px;">Paths de aprendizaje</div>
+    <div class="chart-subtitle" style="margin-bottom:1.2rem;">Selecciona un rol para ver su camino de Junior → Senior</div>
+    <div class="path-role-selector" id="path-role-selector"></div>
+  </div>
+  <div id="path-content"></div>
+</div>
+
+<div class="note-bar" style="margin-top:2rem;max-width:980px;margin-left:auto;margin-right:auto;"><strong>Nota transversal (2026):</strong> El uso de AI coding assistants (GitHub Copilot, Cursor, Claude Code) se considera una habilidad básica en todos los roles junior. No sustituye el entendimiento profundo, pero acelera el desarrollo y la iteración.</div>
+<footer>Valores referenciales · Escala 0–10 · Elaborado para uso educativo · Actualizado mayo 2026</footer>
 
 <script>
 const AXES = [
@@ -413,6 +472,7 @@ function showView(id, btn) {
   document.getElementById(id).classList.add('active');
   btn.classList.add('active');
   if (id === 'vq') { initQuiz(); return; }
+  if (id === 'vp') { initPath(); return; }
   if (!charts[id + 'a']) buildView(id);
 }
 
@@ -667,6 +727,222 @@ function initQuiz() {
 // ===================== END QUIZ =====================
 
 buildView('v2');
-</script>
+
+// ===================== LEARNING PATHS =====================
+// Updated May 2025 — Sources: roadmap.sh, DataCamp, Dataquest, dbt Labs State of AE 2025,
+// Careery, DataGeekLab, brollyai, interviewkickstart, MachineLearningMastery, Coursera
+const PATHS = [
+  {
+    role: 'Data Scientist',
+    color: 'var(--teal)',
+    stages: [
+      {
+        level: 'junior', label: 'Junior', title: '0–2 años',
+        concepts: ['Estadística descriptiva e inferencial','Probabilidad','Álgebra lineal','Regresión lineal y logística','Limpieza y exploración de datos (EDA)','Métricas de evaluación de modelos'],
+        tools: ['Python','Pandas / NumPy','Matplotlib / Seaborn','Scikit-learn','SQL básico','Jupyter Notebooks','Git'],
+        milestone: 'Construir un modelo de clasificación o regresión end-to-end con datos reales y presentar los resultados'
+      },
+      {
+        level: 'mid', label: 'Mid', title: '2–4 años',
+        concepts: ['Feature engineering avanzado','Validación cruzada y selección de modelos','Modelos de ensamble (boosting, bagging)','Series de tiempo','A/B testing y diseño experimental','Estadística bayesiana básica'],
+        tools: ['XGBoost / LightGBM','MLflow (tracking de experimentos)','SQL avanzado (CTEs, window functions)','Plotly / Dash','Spark básico','BigQuery / Snowflake para análisis a escala'],
+        milestone: 'Llevar un modelo a producción, medir su impacto de negocio real y documentar el proceso reproducible'
+      },
+      {
+        level: 'senior', label: 'Senior', title: '4+ años',
+        concepts: ['Deep Learning (redes neuronales, CNNs, Transformers)','NLP y Computer Vision','RAG (Retrieval-Augmented Generation) y fine-tuning de LLMs (LoRA, QLoRA)','Causalidad vs correlación','Interpretabilidad de modelos (SHAP, LIME)','Ética en IA y sesgo algorítmico','Diseño de experimentos a escala','Evaluación de LLMs (benchmarks, human eval, LLM-as-a-judge)'],
+        tools: ['PyTorch / TensorFlow','Hugging Face Transformers','Ray / Dask (procesamiento distribuido)','Vertex AI / SageMaker','Generative AI APIs (OpenAI, Anthropic)'],
+        milestone: 'Liderar proyectos de ML de impacto estratégico, definir la metodología del equipo y mentorear a perfiles junior'
+      }
+    ],
+    resources: [
+      { type: 'Libro', name: 'Hands-On ML with Scikit-Learn — Géron (3ª ed. 2023)' },
+      { type: 'Libro', name: 'Practical Statistics for Data Scientists — Bruce & Bruce' },
+      { type: 'Libro', name: 'The Elements of Statistical Learning — Hastie et al.' },
+      { type: 'Curso', name: 'ML Specialization — Andrew Ng (Coursera)' },
+      { type: 'Curso', name: 'Fast.ai — Practical Deep Learning for Coders' },
+      { type: 'Curso', name: 'Kaggle Learn — Python, Pandas, ML gratis' },
+      { type: 'Plataforma', name: 'Kaggle — competencias y datasets reales' },
+      { type: 'Plataforma', name: 'roadmap.sh/ai-data-scientist' },
+    ]
+  },
+  {
+    role: 'ML Engineer',
+    color: 'var(--purple)',
+    stages: [
+      {
+        level: 'junior', label: 'Junior', title: '0–2 años',
+        concepts: ['Fundamentos de ML (supervisado, no supervisado, métricas)','APIs REST y diseño de servicios','Código modular para ML (separar preprocesamiento, entrenamiento, inferencia)','Control de versiones (Git)','Contenedores (Docker)','Manejo de entornos y reproducibilidad (venvs, YAML configs)'],
+        tools: ['Python','FastAPI / Flask','Docker','Git / GitHub','Linux CLI','Scikit-learn / PyTorch básico','pytest (testing de código ML)'],
+        milestone: 'Deployar un modelo como API REST funcional en la nube y documentar el proceso'
+      },
+      {
+        level: 'mid', label: 'Mid', title: '2–4 años',
+        concepts: ['Optimización de inferencia (latencia, throughput)','Model serving patterns','Feature stores','Monitoring y detección de drift','CI/CD para modelos','System design para ML','Big data processing (Spark/PySpark concepts)'],
+        tools: ['Kubernetes','Cloud Run / Vertex AI / SageMaker','Prometheus + Grafana','TorchServe / vLLM','GitHub Actions (CI/CD)','MLflow / Weights & Biases','PySpark / Spark básico'],
+        milestone: 'Construir un sistema de serving escalable con monitoreo en producción, CI/CD automatizado y manejar pipelines de feature engineering a escala'
+      },
+      {
+        level: 'senior', label: 'Senior', title: '4+ años',
+        concepts: ['Quantización y pruning de modelos','Diseño de sistemas distribuidos de ML','Multi-tenancy y cost optimization','LLMOps (RAG, fine-tuning, evaluación)','Responsible AI y gobernanza','Arquitectura de plataformas de ML'],
+        tools: ['TensorRT / ONNX (optimización)','Triton Inference Server','Terraform (IaC)','vLLM / Ollama','LLM APIs (OpenAI / Anthropic / Gemini)','Feature platforms (Feast, Tecton)'],
+        milestone: 'Diseñar la arquitectura completa de serving para modelos críticos a escala y liderar al equipo técnico'
+      }
+    ],
+    resources: [
+      { type: 'Libro', name: 'Designing ML Systems — Chip Huyen (2022)' },
+      { type: 'Libro', name: 'Building ML Powered Apps — Ameisen (2020)' },
+      { type: 'Curso', name: 'Full Stack Deep Learning (FSDL) — gratuito online' },
+      { type: 'Curso', name: 'Made With ML — Goku Mohandas' },
+      { type: 'Curso', name: 'ML Engineering for Production — DeepLearning.AI' },
+      { type: 'Plataforma', name: 'roadmap.sh/machine-learning' },
+      { type: 'Plataforma', name: 'Google Cloud Skills Boost — ML paths' },
+    ]
+  },
+  {
+    role: 'Data Engineer',
+    color: 'var(--blue)',
+    stages: [
+      {
+        level: 'junior', label: 'Junior', title: '0–2 años',
+        concepts: ['SQL (la base de todo — joins, CTEs, window functions, optimización)','Python para scripting y ETL','ETL vs ELT — cuándo usar cada uno','Cloud storage y warehouses (BigQuery, Snowflake)','Idempotencia y manejo de errores en pipelines','Control de versiones (Git) aplicado a SQL y scripts'],
+        tools: ['Python','PostgreSQL / MySQL','BigQuery o Snowflake','Airflow básico','Git','Linux / Bash','dbt básico'],
+        milestone: 'Construir un pipeline ETL/ELT que mueva datos limpios desde una fuente real hacia un warehouse'
+      },
+      {
+        level: 'mid', label: 'Mid', title: '2–4 años',
+        concepts: ['Modelado dimensional (star schema, Kimball)','Data lakehouse (Bronze/Silver/Gold)','Streaming vs batch processing','Data quality y testing','Particionamiento y optimización de consultas','Orquestación y scheduling'],
+        tools: ['Apache Spark / PySpark','Kafka / Pub Sub (streaming)','dbt avanzado (tests, docs, lineage)','Airflow avanzado','Terraform básico','Soda + dbt tests nativos (Great Expectations legacy)'],
+        milestone: 'Diseñar y operar un data lakehouse con pipelines confiables, testados y documentados'
+      },
+      {
+        level: 'senior', label: 'Senior', title: '4+ años',
+        concepts: ['Arquitectura de datos (data mesh, data fabric)','Gobernanza y data contracts','SLA/SLO de datos y data reliability engineering','FinOps de datos (cost optimization, query optimization)','Lakehouse semantics (Iceberg, Delta Lake, Hudi)','AI-native data engineering (AI-assisted pipelines)','Observabilidad de datos (lineage, anomaly detection)'],
+        tools: ['Apache Iceberg / Delta Lake','Dataplex / OpenMetadata (governance)','Monte Carlo / Soda (observabilidad)','dbt Python models','Kubernetes para data','AI copilots para pipelines'],
+        milestone: 'Definir la arquitectura de datos de la organización, establecer SLAs, optimizar costos cloud significativamente y liderar su evolución técnica'
+      }
+    ],
+    resources: [
+      { type: 'Libro', name: 'Fundamentals of Data Engineering — Reis & Housley (2022)' },
+      { type: 'Libro', name: 'Designing Data-Intensive Apps — Kleppmann (imprescindible)' },
+      { type: 'Libro', name: 'The Data Warehouse Toolkit — Kimball & Ross' },
+      { type: 'Curso', name: 'Data Engineering Zoomcamp — DataTalks.Club (gratuito)' },
+      { type: 'Curso', name: 'dbt Fundamentals — oficial y gratuito' },
+      { type: 'Plataforma', name: 'DataTalks.Club — comunidad activa' },
+      { type: 'Plataforma', name: 'datageeklab.com — guía práctica GCP' },
+    ]
+  },
+  {
+    role: 'MLOps Engineer',
+    color: 'var(--coral)',
+    stages: [
+      {
+        level: 'junior', label: 'Junior', title: '0–2 años',
+        concepts: ['CI/CD básico (pipelines de build y test)','Contenedores (Docker)','Control de versiones y GitOps','Cloud fundamentals','Linux y Bash scripting','Fundamentos de ML (cómo funciona un modelo)','Data validation tests y model contract tests'],
+        tools: ['Docker','Git / GitHub Actions','Python (numpy, pandas, scikit-learn, MLflow)','Linux / Bash','pytest + Pandera / Deepchecks (testing de ML)','YAML / configuración de pipelines'],
+        milestone: 'Automatizar el build, test y deploy de un modelo con CI/CD reproducible'
+      },
+      {
+        level: 'mid', label: 'Mid', title: '2–4 años',
+        concepts: ['Orquestación de pipelines de ML','Model registry y versionamiento','Detección de data drift y model drift','Infraestructura como código (IaC)','Reproducibilidad y experiment tracking','Feature stores'],
+        tools: ['Kubernetes','MLflow / Weights & Biases','Terraform','Kubeflow / Vertex AI Pipelines','Prometheus + Grafana','Fiddler / Arize (drift monitoring)'],
+        milestone: 'Construir un pipeline de reentrenamiento automático con monitoreo de drift y alertas'
+      },
+      {
+        level: 'senior', label: 'Senior', title: '4+ años',
+        concepts: ['Platform engineering para ML','Multi-cloud y cost optimization','Gobernanza de modelos y Responsible AI','LLMOps (RAG pipelines, eval frameworks, prompt management)','Serverless ML','Security y compliance en ML','Observability de LLMs (drift, hallucination detection)'],
+        tools: ['Seldon / BentoML / Ray Serve','ArgoCD (GitOps)','OpenTelemetry','Feature platforms (Feast, Tecton)','LangSmith / Phoenix / Weave (LLM eval & observability)','SHAP / LIME (XAI)','Guardrails AI / Lakera (LLM safety)'],
+        milestone: 'Diseñar y mantener una plataforma ML usada por múltiples equipos, con SLOs definidos y gobernanza de modelos incluyendo LLMs'
+      }
+    ],
+    resources: [
+      { type: 'Libro', name: 'Introducing MLOps — Treveil et al. (2020)' },
+      { type: 'Libro', name: 'Designing ML Systems — Chip Huyen (2022)' },
+      { type: 'Curso', name: 'MLOps Specialization — DeepLearning.AI (Coursera)' },
+      { type: 'Curso', name: 'Made With ML — MLOps track (gratuito)' },
+      { type: 'Curso', name: 'Python & ML for MLOps — Duke Univ. (Coursera)' },
+      { type: 'Plataforma', name: 'roadmap.sh/mlops' },
+      { type: 'Plataforma', name: 'MLOps Community Slack' },
+    ]
+  },
+  {
+    role: 'Analytics Engineer',
+    color: 'var(--amber)',
+    stages: [
+      {
+        level: 'junior', label: 'Junior', title: '0–2 años',
+        concepts: ['SQL avanzado (CTEs, window functions, agregaciones complejas)','Modelado dimensional básico (star schema, fact y dimension tables)','Arquitectura de warehouse (staging → intermediate → marts)','Data quality básico (nulls, uniqueness, freshness)','Documentación de modelos y métricas','Versionamiento de transformaciones con Git'],
+        tools: ['SQL','dbt Core (fundamentals)','BigQuery / Snowflake','Looker / Metabase / Power BI','Git'],
+        milestone: 'Construir modelos dbt de staging y marts que alimenten un dashboard confiable y bien documentado'
+      },
+      {
+        level: 'mid', label: 'Mid', title: '2–4 años',
+        concepts: ['Data contracts y acuerdos de SLA','Lineage y trazabilidad de datos','Testing avanzado en dbt (custom tests, macros)','Semantic layer y métricas unificadas','Gobernanza básica de datos','Modelado SCD Type 2 (snapshots)'],
+        tools: ['dbt avanzado (macros, Jinja, incremental models)','dbt Cloud (scheduling, CI)','Soda + dbt tests avanzados (custom tests)','Airflow / Dagster para orquestar dbt','Tableau / Looker Studio'],
+        milestone: 'Diseñar un semantic layer que unifique métricas de toda la empresa con testing y documentación completa'
+      },
+      {
+        level: 'senior', label: 'Senior', title: '4+ años',
+        concepts: ['Data mesh y arquitectura analítica distribuida','Gobernanza de métricas a escala (MetricFlow)','Self-serve analytics','FinOps analítico (cost per query)','Python models en dbt','AI-augmented analytics (dbt Copilot, AI-assisted SQL, natural language to SQL)'],
+        tools: ['dbt Metrics / MetricFlow','OpenMetadata / Datahub (catálogo)','Monte Carlo (observabilidad)','Cube.dev (semantic layer externo)','dbt Python models','Dagster avanzado'],
+        milestone: 'Definir los estándares de métricas, gobernanza y arquitectura analítica para toda la organización'
+      }
+    ],
+    resources: [
+      { type: 'Libro', name: 'The Analytics Engineering Guide — dbt Labs (online)' },
+      { type: 'Libro', name: 'The Data Warehouse Toolkit — Kimball & Ross' },
+      { type: 'Curso', name: 'dbt Fundamentals — oficial y completamente gratuito' },
+      { type: 'Certificación', name: 'dbt Analytics Engineering Certification (oficial)' },
+      { type: 'Certificación', name: 'dbt Architect Certification (nivel avanzado)' },
+      { type: 'Plataforma', name: 'dbt Community Slack — la más activa del área' },
+      { type: 'Plataforma', name: 'Locally Optimistic — blog referente del rol' },
+    ]
+  }
+];
+
+let activePathRole = 0;
+
+function renderPath(idx) {
+  activePathRole = idx;
+  const p = PATHS[idx];
+  document.querySelectorAll('.path-role-btn').forEach(function(b, i) {
+    b.classList.toggle('active', i === idx);
+    b.style.background = i === idx ? p.color : '';
+    b.style.borderColor = i === idx ? p.color : '';
+    b.style.color = i === idx ? 'var(--bg)' : '';
+  });
+  const stagesHtml = p.stages.map(function(s) {
+    const concepts = s.concepts.map(function(c) { return '<span class="stage-tag concept">' + c + '</span>'; }).join('');
+    const tools = s.tools.map(function(t) { return '<span class="stage-tag tool">' + t + '</span>'; }).join('');
+    return '<div class="stage-card ' + s.level + '">' +
+      '<div class="stage-label ' + s.level + '">' + s.label + '</div>' +
+      '<div class="stage-title">' + s.title + '</div>' +
+      '<div class="stage-section"><div class="stage-section-title">Conceptos</div><div class="stage-items">' + concepts + '</div></div>' +
+      '<div class="stage-section"><div class="stage-section-title">Herramientas</div><div class="stage-items">' + tools + '</div></div>' +
+      '<div class="stage-section"><div class="stage-section-title">Hito clave</div><div style="font-size:12px;color:var(--text);line-height:1.6;padding:8px;background:var(--surface);border-radius:4px;border-left:2px solid ' + p.color + '">' + s.milestone + '</div></div>' +
+    '</div>';
+  }).join('');
+  const resourcesHtml = p.resources.map(function(r) {
+    return '<div class="resource-item"><div class="resource-type">' + r.type + '</div><div class="resource-name">' + r.name + '</div></div>';
+  }).join('');
+  document.getElementById('path-content').innerHTML =
+    '<div class="path-stages">' + stagesHtml + '</div>' +
+    '<div class="path-resources"><h3>Recursos recomendados</h3><div class="resources-grid">' + resourcesHtml + '</div></div>';
+}
+
+function initPath() {
+  const selector = document.getElementById('path-role-selector');
+  if (selector.children.length === 0) {
+    PATHS.forEach(function(p, i) {
+      const btn = document.createElement('button');
+      btn.className = 'path-role-btn';
+      btn.textContent = p.role;
+      btn.onclick = function() { renderPath(i); };
+      selector.appendChild(btn);
+    });
+  }
+  renderPath(activePathRole);
+}
+// ===================== END LEARNING PATHS =====================</script>
 </body>
 </html>
