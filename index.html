@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roles en Datos — Skills Comparison</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600&family=Space+Mono:wght@400;700&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --teal:   #00FFB2;
+    --purple: #A78BFA;
+    --blue:   #38BDF8;
+    --coral:  #FB7185;
+    --amber:  #FCD34D;
+    --bg:     #080B14;
+    --surface:#0E1424;
+    --card:   #121929;
+    --border: #1E2D4A;
+    --border2: #243352;
+    --text:   #E2E8F8;
+    --muted:  #4A5A7A;
+    --muted2: #6B7FA0;
+    --ink:    #E2E8F8;
+    --paper:  #080B14;
+  }
+  body {
+    font-family: 'Space Grotesk', sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh; padding: 3rem 2rem 6rem;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(0,255,178,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 90% 80%, rgba(56,189,248,0.04) 0%, transparent 60%);
+  }
+  body::before {
+    content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image:
+      linear-gradient(rgba(0,255,178,0.018) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,178,0.018) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+  * { position: relative; z-index: 1; }
+  header {
+    max-width: 980px; margin: 0 auto 4rem; padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: flex-end; gap: 2rem; flex-wrap: wrap;
+  }
+  .header-left h1 {
+    font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800;
+    font-size: clamp(2.2rem, 5vw, 3.6rem); line-height: 1.05; letter-spacing: -0.03em;
+    color: var(--text);
+  }
+  .header-left h1 em {
+    font-style: normal; color: var(--teal);
+    text-shadow: 0 0 20px rgba(0,255,178,0.5), 0 0 40px rgba(0,255,178,0.2);
+  }
+  .header-left p { font-size: 12px; color: var(--muted2); margin-top: 10px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .header-right { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); line-height: 2; text-transform: uppercase; letter-spacing: 0.1em; text-align: right; }
+  .tab-bar { max-width: 980px; margin: 0 auto 2.5rem; display: flex; gap: 4px; width: fit-content; }
+  .tab {
+    padding: 9px 20px; font-family: 'Space Mono', monospace; font-size: 11px;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    border: 1px solid var(--border); background: var(--surface); color: var(--muted2);
+    cursor: pointer; border-radius: 3px; transition: all 0.2s;
+  }
+  .tab:hover { border-color: var(--teal); color: var(--teal); background: rgba(0,255,178,0.05); }
+  .tab.active { background: rgba(0,255,178,0.08); border-color: var(--teal); color: var(--teal); box-shadow: 0 0 16px rgba(0,255,178,0.12); }
+  .view { display: none; max-width: 980px; margin: 0 auto; }
+  .view.active { display: block; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .chart-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 6px; padding: 2rem 1.8rem; margin-bottom: 1.5rem;
+    box-shadow: 0 0 40px rgba(0,0,0,0.5); position: relative; overflow: hidden;
+  }
+  .chart-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0,255,178,0.35), transparent);
+  }
+  .chart-header { margin-bottom: 1.4rem; }
+  .chart-title { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 1.05rem; margin-bottom: 4px; color: var(--text); }
+  .chart-subtitle { font-size: 10px; color: var(--muted2); letter-spacing: 0.05em; margin-bottom: 1.2rem; text-transform: uppercase; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 1.2rem; }
+  .legend-btn {
+    display: flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 3px;
+    border: 1px solid var(--border); background: var(--surface); cursor: pointer;
+    font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase;
+    color: var(--muted); transition: all 0.15s; user-select: none;
+  }
+  .legend-btn:hover { border-color: var(--muted2); color: var(--text); }
+  .legend-btn.on { color: var(--text); border-color: var(--border2); }
+  .legend-btn.on .legend-dot { opacity: 1; }
+  .legend-btn .legend-dot { width: 8px; height: 8px; border-radius: 50%; opacity: 0.2; transition: all 0.15s; flex-shrink: 0; }
+  .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+  @media (max-width: 700px) { .charts-row { grid-template-columns: 1fr; } }
+  .canvas-wrap { position: relative; width: 100%; height: 380px; }
+  .note-bar { background: rgba(0,255,178,0.04); border: 1px solid rgba(0,255,178,0.12); border-radius: 4px; padding: 12px 16px; font-size: 12px; color: var(--muted2); line-height: 1.7; }
+  .note-bar strong { color: var(--teal); font-weight: 500; }
+  .skills-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 1rem; margin-top: 1.5rem; }
+  .skill-card { background: var(--surface); border: 1px solid var(--border); border-radius: 5px; padding: 1.1rem; border-left: 2px solid transparent; }
+  .skill-card.teal  { border-left-color: var(--teal); }
+  .skill-card.purple { border-left-color: var(--purple); }
+  .skill-card.blue  { border-left-color: var(--blue); }
+  .skill-card.coral { border-left-color: var(--coral); }
+  .skill-card.amber { border-left-color: var(--amber); }
+  .skill-card h3 { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 0.82rem; margin-bottom: 10px; color: var(--text); letter-spacing: 0.02em; }
+  .skill-card ul { list-style: none; font-size: 11px; color: var(--muted2); line-height: 2.1; }
+  .skill-card ul li::before { content: '/ '; color: var(--teal); }
+  .hint { font-size: 10px; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 1rem; }
+  .q-block { margin-bottom: 2rem; }
+  .q-text { font-size: 14px; font-weight: 500; margin-bottom: 1.2rem; line-height: 1.7; color: var(--text); }
+  .q-num { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--teal); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; }
+  .q-options { display: flex; flex-direction: column; gap: 8px; }
+  .q-opt {
+    padding: 12px 16px; border: 1px solid var(--border); border-radius: 4px;
+    background: var(--surface); cursor: pointer; font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px; color: var(--muted2); text-align: left; transition: all 0.15s;
+  }
+  .q-opt:hover { border-color: var(--teal); color: var(--text); background: rgba(0,255,178,0.05); }
+  .q-opt.selected { border-color: var(--teal); background: rgba(0,255,178,0.08); color: var(--text); }
+  .quiz-progress { height: 2px; background: var(--border); border-radius: 2px; margin-bottom: 2rem; }
+  .quiz-progress-bar { height: 100%; background: linear-gradient(90deg, var(--teal), var(--blue)); border-radius: 2px; transition: width 0.4s ease; }
+  .quiz-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 2rem; }
+  .quiz-btn {
+    padding: 10px 22px; font-family: 'Space Mono', monospace; font-size: 11px;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--muted2); cursor: pointer; border-radius: 3px; transition: all 0.15s;
+  }
+  .quiz-btn:hover { border-color: var(--teal); color: var(--teal); }
+  .quiz-btn.primary { background: rgba(0,255,178,0.1); border-color: var(--teal); color: var(--teal); }
+  .quiz-btn:disabled { opacity: 0.25; cursor: not-allowed; pointer-events: none; }
+  .score-bar-wrap { display: flex; align-items: center; gap: 10px; font-size: 11px; }
+  .score-bar-label { width: 150px; flex-shrink: 0; color: var(--text); font-size: 11px; }
+  .score-bar-bg { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .score-bar-fill { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
+  .score-bar-val { width: 30px; text-align: right; color: var(--muted2); font-family: 'Space Mono', monospace; font-size: 10px; }
+  footer { max-width: 980px; margin: 5rem auto 0; border-top: 1px solid var(--border); padding-top: 1.5rem; font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+</style>
+<script>
+var isDark = true;
+var LIGHT = {
+  '--bg':'#F5F2EB','--surface':'#FFFFFF','--card':'#FFFFFF',
+  '--border':'#E2DDD4','--border2':'#D0C8BC',
+  '--text':'#0E0E0E','--muted':'#8A8478','--muted2':'#5F5E5A',
+  '--ink':'#0E0E0E','--paper':'#F5F2EB',
+  '--teal':'#1D9E75','--purple':'#7F77DD','--blue':'#378ADD',
+  '--coral':'#D85A30','--amber':'#D4900A'
+};
+var DARK = {
+  '--bg':'#080B14','--surface':'#0E1424','--card':'#121929',
+  '--border':'#1E2D4A','--border2':'#243352',
+  '--text':'#E2E8F8','--muted':'#4A5A7A','--muted2':'#6B7FA0',
+  '--ink':'#E2E8F8','--paper':'#080B14',
+  '--teal':'#00FFB2','--purple':'#A78BFA','--blue':'#38BDF8',
+  '--coral':'#FB7185','--amber':'#FCD34D'
+};
+function toggleTheme() {
+  isDark = !isDark;
+  var theme = isDark ? DARK : LIGHT;
+  var root = document.documentElement;
+  Object.entries(theme).forEach(function(e){ root.style.setProperty(e[0], e[1]); });
+  document.body.style.backgroundImage = isDark
+    ? 'radial-gradient(ellipse 80% 50% at 50% -10%, rgba(0,255,178,0.06) 0%, transparent 60%)'
+    : 'none';
+  var em = document.querySelector('h1 em');
+  if (em) em.style.textShadow = isDark ? '0 0 20px rgba(0,255,178,0.5)' : 'none';
+  if (typeof charts !== 'undefined') Object.values(charts).forEach(function(c){ if(c) c.update(); });
+  if (typeof quizChart !== 'undefined' && quizChart) quizChart.update();
+  var btn = document.getElementById('theme-toggle');
+  if (btn) btn.textContent = isDark ? '◑ Modo claro' : '◑ Modo oscuro';
+}
+</script>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>Roles en <em>datos</em></h1>
+    <p style="font-size:12px;color:var(--muted2);margin-top:10px;letter-spacing:0.05em;text-transform:uppercase;font-family:'Space Mono',monospace;">Comparación de skills por perfil profesional</p>
+  </div>
+  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:12px;">
+    <button id="theme-toggle" onclick="toggleTheme()" style="
+      padding:8px 16px; font-family:'Space Mono',monospace; font-size:10px;
+      letter-spacing:0.08em; text-transform:uppercase;
+      border:1px solid var(--border); background:var(--surface);
+      color:var(--muted2); cursor:pointer; border-radius:3px; transition:all 0.2s;
+    " onmouseover="this.style.borderColor='var(--teal)';this.style.color='var(--teal)'"
+       onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted2)'">
+      ◑ Cambiar modo
+    </button>
+    <div class="header-right">Escala 0–10<br>Referencial / no exhaustivo<br>GCP · ML · Data</div>
+  </div>
+</header>
+
+<div class="tab-bar">
+  <button class="tab active" onclick="showView('v2',this)">Equipo pequeño / startup</button>
+  <button class="tab" onclick="showView('v3',this)">Equipo maduro / escala</button>
+  <button class="tab" onclick="showView('vq',this)">¿Cuál es tu perfil?</button>
+</div>
+
+<!-- VIEW 2 -->
+<div class="view active" id="v2">
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title">Perfiles de modelo</div>
+        <div class="chart-subtitle">DS · ML Engineer (+ MLOps)</div>
+        <p class="hint">Haz clic para mostrar u ocultar</p>
+        <div class="legend" id="leg2a"></div>
+      </div>
+      <div class="canvas-wrap"><canvas id="c2a" role="img" aria-label="Radar perfiles modelo equipo pequeño"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title">Perfiles de datos</div>
+        <div class="chart-subtitle">Data Engineer · Analytics Engineer</div>
+        <p class="hint">Haz clic para mostrar u ocultar</p>
+        <div class="legend" id="leg2b"></div>
+      </div>
+      <div class="canvas-wrap"><canvas id="c2b" role="img" aria-label="Radar perfiles datos equipo pequeño"></canvas></div>
+    </div>
+  </div>
+  <div class="note-bar"><strong>¿Cuándo aplica?</strong> Equipos de 2–6 personas donde el ML Engineer también gestiona CI/CD, monitoreo y reentrenamiento. El Analytics Engineer aparece cuando hay un stack moderno (BigQuery/Snowflake + dbt) aunque el equipo sea pequeño.</div>
+  <div class="skills-grid">
+    <div class="skill-card teal"><h3>Data Scientist</h3><ul><li>Estadística y matemáticas</li><li>Modelado predictivo</li><li>Análisis exploratorio</li><li>Visualización</li><li>Python / R</li></ul></div>
+    <div class="skill-card purple"><h3>ML Engineer (+ MLOps)</h3><ul><li>Software engineering</li><li>Deployment de modelos</li><li>CI/CD para modelos</li><li>Monitoreo y alertas</li><li>Docker / Cloud / Kubernetes</li></ul></div>
+    <div class="skill-card blue"><h3>Data Engineer</h3><ul><li>Pipelines ETL/ELT</li><li>Bases de datos / warehouses</li><li>Orquestación (Airflow)</li><li>SQL avanzado</li><li>Infraestructura de datos</li></ul></div>
+    <div class="skill-card amber"><h3>Analytics Engineer</h3><ul><li>Transformaciones SQL (dbt)</li><li>Data quality y testing</li><li>Lineage y documentación</li><li>Métricas de negocio</li><li>Python para analytics</li></ul></div>
+  </div>
+</div>
+
+<!-- VIEW 3 -->
+<div class="view" id="v3">
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title">Perfiles de modelo</div>
+        <div class="chart-subtitle">DS · ML Engineer · MLOps Engineer</div>
+        <p class="hint">Haz clic para mostrar u ocultar</p>
+        <div class="legend" id="leg3a"></div>
+      </div>
+      <div class="canvas-wrap"><canvas id="c3a" role="img" aria-label="Radar perfiles modelo equipo maduro"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title">Perfiles de datos</div>
+        <div class="chart-subtitle">Data Engineer · Analytics Engineer</div>
+        <p class="hint">Haz clic para mostrar u ocultar</p>
+        <div class="legend" id="leg3b"></div>
+      </div>
+      <div class="canvas-wrap"><canvas id="c3b" role="img" aria-label="Radar perfiles datos equipo maduro"></canvas></div>
+    </div>
+  </div>
+  <div class="note-bar" style="margin-top:0;"><strong>¿Cuándo aplica?</strong> Equipos con 10+ personas en ML donde la infraestructura justifica un rol dedicado. Común en big tech, fintechs y empresas con modelos críticos en producción.</div>
+  <div class="skills-grid">
+    <div class="skill-card teal"><h3>Data Scientist</h3><ul><li>Estadística y matemáticas</li><li>Modelado predictivo</li><li>Análisis exploratorio</li><li>Visualización</li><li>Python / R</li></ul></div>
+    <div class="skill-card purple"><h3>ML Engineer</h3><ul><li>Arquitecturas de modelos</li><li>Fine-tuning y optimización</li><li>Serving y APIs</li><li>Benchmarking</li><li>Feature engineering</li></ul></div>
+    <div class="skill-card coral"><h3>MLOps Engineer</h3><ul><li>CI/CD para modelos</li><li>Monitoreo y alertas</li><li>Kubernetes / Terraform</li><li>Reentrenamiento automático</li><li>Reproducibilidad</li></ul></div>
+    <div class="skill-card blue"><h3>Data Engineer</h3><ul><li>Pipelines ETL/ELT</li><li>Bases de datos / warehouses</li><li>Orquestación (Airflow)</li><li>SQL avanzado</li><li>Infraestructura de datos</li></ul></div>
+    <div class="skill-card amber"><h3>Analytics Engineer</h3><ul><li>Transformaciones SQL (dbt)</li><li>Data quality y testing</li><li>Lineage y documentación</li><li>Métricas de negocio</li><li>Python para analytics</li></ul></div>
+  </div>
+</div>
+
+<!-- VIEW QUIZ -->
+<div class="view" id="vq">
+  <div class="chart-card" id="quiz-container">
+    <div class="chart-title" style="margin-bottom:6px;">¿Cuál es tu perfil en datos?</div>
+    <div class="chart-subtitle" style="margin-bottom:2rem;">Responde 10 preguntas para descubrir qué rol se ajusta mejor a ti</div>
+    <div id="quiz-body"></div>
+  </div>
+  <div id="quiz-result" style="display:none;">
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-title" style="margin-bottom:4px;" id="result-title">Tu perfil</div>
+        <div class="chart-subtitle" id="result-subtitle"></div>
+        <div style="margin:1.5rem 0 1rem;font-size:12px;color:var(--muted);" id="result-desc"></div>
+        <div class="canvas-wrap" style="height:340px;"><canvas id="cq"></canvas></div>
+      </div>
+      <div class="chart-card" style="display:flex;flex-direction:column;gap:1rem;">
+        <div class="chart-title" style="margin-bottom:4px;">Puntuaciones por rol</div>
+        <div id="scores-list" style="display:flex;flex-direction:column;gap:10px;margin-top:8px;"></div>
+        <div class="note-bar" style="margin-top:auto;" id="result-note"></div>
+      </div>
+    </div>
+    <button onclick="resetQuiz()" style="margin-top:1rem;padding:10px 24px;font-family:'DM Mono',monospace;font-size:12px;letter-spacing:0.05em;text-transform:uppercase;border:1.5px solid var(--ink);background:transparent;cursor:pointer;border-radius:4px;">← Volver a intentarlo</button>
+  </div>
+</div>
+
+<footer>Valores referenciales · Escala 0–10 · Elaborado para uso educativo</footer>
+
+<script>
+const AXES = [
+  'Estadística /\nmatemáticas',
+  'Modelado ML /\nexperimentos',
+  'Programación\n(Python/SQL)',
+  'Infraestructura\ncloud',
+  'Pipelines\nde datos',
+  'Bases de datos\n/ SQL',
+  'CI/CD y\nmonitoreo',
+  'Orientación\na negocio',
+  'Calidad y\ngobierno de datos'
+];
+
+// [estadística, modelado, programación, infra, pipelines, sql, cicd, negocio, calidad]
+const GROUPS = {
+  v2a: [
+    { label: 'Data Scientist',        data: [9,9,7,3,5,7,4,5,4], color: '#00FFB2', dash: [] },
+    { label: 'ML Engineer (+ MLOps)', data: [6,8,8,8,7,5,9,3,3], color: '#A78BFA', dash: [6,3] },
+  ],
+  v2b: [
+    { label: 'Data Engineer',         data: [3,3,8,9,9,9,6,2,6], color: '#38BDF8', dash: [] },
+    { label: 'Analytics Engineer',    data: [5,3,8,4,6,9,4,9,9], color: '#FCD34D', dash: [4,4] },
+  ],
+  v3a: [
+    { label: 'Data Scientist',  data: [9,9,7,3,5,7,4,5,4], color: '#00FFB2', dash: [] },
+    { label: 'ML Engineer',     data: [6,8,8,7,6,5,5,3,3], color: '#A78BFA', dash: [6,3] },
+    { label: 'MLOps Engineer',  data: [2,3,7,9,7,4,9,2,5], color: '#FB7185', dash: [6,2,2,2] },
+  ],
+  v3b: [
+    { label: 'Data Engineer',      data: [3,3,8,9,9,9,6,2,6], color: '#38BDF8', dash: [] },
+    { label: 'Analytics Engineer', data: [5,3,8,4,6,9,4,9,9], color: '#FCD34D', dash: [4,4] },
+  ],
+};
+
+const charts = {};
+
+function hexToRgba(hex, a) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+function buildChart(groupId, canvasId, legId) {
+  const roles = GROUPS[groupId];
+  const datasets = roles.map(r => ({
+    label: r.label,
+    data: r.data,
+    borderColor: r.color,
+    backgroundColor: hexToRgba(r.color, 0.13),
+    borderWidth: 2.5,
+    pointBackgroundColor: r.color,
+    pointBorderColor: '#fff',
+    pointBorderWidth: 1,
+    pointRadius: 2,
+    pointHoverRadius: 5,
+    borderDash: r.dash,
+    hidden: false,
+  }));
+
+  const chart = new Chart(document.getElementById(canvasId), {
+    type: 'radar',
+    data: { labels: AXES, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 350, easing: 'easeInOutQuart' },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#0e0e0e',
+          titleColor: '#E2E8F8',
+          bodyColor: '#6B7FA0',
+          padding: 10,
+          callbacks: { label: ctx => `  ${ctx.dataset.label}: ${ctx.raw}/10` }
+        }
+      },
+      scales: {
+        r: {
+          min: 0, max: 10,
+          ticks: { stepSize: 2, display: false, backdropColor: 'transparent' },
+          circular: false,
+          grid: { color: 'rgba(255,255,255,0.06)', lineWidth: 1, circular: false },
+          angleLines: { color: 'rgba(255,255,255,0.1)', lineWidth: 1 },
+          pointLabels: {
+            font: { size: 10, family: "'DM Mono', monospace" },
+            color: '#4A5A7A',
+            padding: 6
+          }
+        }
+      }
+    }
+  });
+
+  charts[groupId] = chart;
+
+  const legEl = document.getElementById(legId);
+  roles.forEach((r, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'legend-btn on';
+    btn.innerHTML = `<span class="legend-dot" style="background:${r.color}"></span>${r.label}`;
+    btn.addEventListener('click', () => {
+      const ds = chart.data.datasets[i];
+      const isOn = !ds.hidden;
+      ds.hidden = isOn;
+      btn.classList.toggle('on', !isOn);
+      chart.update();
+    });
+    legEl.appendChild(btn);
+  });
+}
+
+function buildView(viewId) {
+  buildChart(viewId + 'a', 'c' + viewId.slice(1) + 'a', 'leg' + viewId.slice(1) + 'a');
+  buildChart(viewId + 'b', 'c' + viewId.slice(1) + 'b', 'leg' + viewId.slice(1) + 'b');
+}
+
+function showView(id, btn) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+  if (id === 'vq') { initQuiz(); return; }
+  if (!charts[id + 'a']) buildView(id);
+}
+
+// ===================== QUIZ =====================
+// Scores map: [DS, MLE, DE, MLOps, AE]
+const QUESTIONS = [
+  {
+    text: "Cuando tienes un problema complejo en el trabajo, ¿cuál es tu primera reacción?",
+    opts: [
+      { text: "Quiero entenderlo a fondo — busco patrones y causas antes de actuar", scores: [3,0,0,0,1] },
+      { text: "Quiero construir algo que lo resuelva de forma confiable", scores: [0,2,2,1,0] },
+      { text: "Quiero automatizarlo para que no vuelva a pasar", scores: [0,1,1,3,0] },
+      { text: "Quiero presentarlo claramente para que otros tomen decisiones", scores: [1,0,0,0,3] },
+    ]
+  },
+  {
+    text: "¿Qué tipo de trabajo te genera más satisfacción?",
+    opts: [
+      { text: "Descubrir algo que nadie sabía a partir de los datos", scores: [3,0,0,0,1] },
+      { text: "Construir un sistema que funciona solo, sin intervención", scores: [0,1,2,2,0] },
+      { text: "Ver algo que diseñé siendo usado por otras personas", scores: [0,3,0,1,0] },
+      { text: "Que alguien tome una mejor decisión gracias a mi trabajo", scores: [1,0,0,0,3] },
+    ]
+  },
+  {
+    text: "¿Cómo te describes a ti mismo/a?",
+    opts: [
+      { text: "Curioso/a — me gusta experimentar y probar hipótesis", scores: [3,0,0,0,1] },
+      { text: "Constructor/a — me gusta hacer cosas que otros usan", scores: [0,3,1,0,0] },
+      { text: "Ordenado/a — me gusta que los procesos sean confiables y repetibles", scores: [0,0,2,3,1] },
+      { text: "Traductor/a — me gusta conectar lo técnico con el negocio", scores: [1,0,0,0,3] },
+    ]
+  },
+  {
+    text: "Imagina que trabajas en un equipo de datos. ¿Cuál sería tu rol natural?",
+    opts: [
+      { text: "El que analiza y encuentra insights en los datos", scores: [3,0,0,0,2] },
+      { text: "El que construye la infraestructura para que todo funcione", scores: [0,1,3,1,0] },
+      { text: "El que lleva los modelos al mundo real y los mantiene funcionando", scores: [0,3,0,2,0] },
+      { text: "El que asegura que los datos sean confiables y bien definidos", scores: [0,0,1,0,3] },
+    ]
+  },
+  {
+    text: "¿Qué te frustra más en un proyecto?",
+    opts: [
+      { text: "No tener suficientes datos o que sean de mala calidad", scores: [3,1,1,0,1] },
+      { text: "Que algo funcione en mi computador pero no en producción", scores: [0,3,0,2,0] },
+      { text: "Que los datos lleguen tarde o de forma inconsistente", scores: [0,0,3,1,0] },
+      { text: "Que nadie sepa qué significa una métrica o de dónde viene", scores: [1,0,0,0,3] },
+    ]
+  },
+  {
+    text: "¿Cuál de estas frases resuena más contigo?",
+    opts: [
+      { text: "\"Los datos tienen la respuesta, hay que saber buscarla\"", scores: [3,0,0,0,1] },
+      { text: "\"Si no está en producción y funcionando, no existe\"", scores: [0,3,0,1,0] },
+      { text: "\"Un dato que llega tarde o sucio es peor que no tener datos\"", scores: [0,0,3,0,1] },
+      { text: "\"Un sistema que falla sin que nadie lo note, va a seguir fallando\"", scores: [0,1,1,3,0] },
+      { text: "\"Las métricas mal definidas generan decisiones equivocadas\"", scores: [1,0,0,0,3] },
+    ]
+  },
+  {
+    text: "¿Qué te gustaría aprender en los próximos meses?",
+    opts: [
+      { text: "Cómo construir y mejorar modelos de inteligencia artificial", scores: [3,1,0,0,0] },
+      { text: "Cómo hacer que sistemas funcionen a gran escala de forma confiable", scores: [0,2,1,3,0] },
+      { text: "Cómo mover y transformar grandes volúmenes de datos eficientemente", scores: [0,0,3,0,1] },
+      { text: "Cómo traducir datos en métricas que ayuden al negocio a decidir", scores: [1,0,0,0,3] },
+      { text: "Cómo llevar modelos de inteligencia artificial al mundo real", scores: [0,3,0,1,0] },
+    ]
+  },
+  {
+    text: "En tu trabajo ideal, ¿con quién interactuarías más?",
+    opts: [
+      { text: "Con investigadores, discutiendo metodologías y resultados", scores: [3,0,0,0,0] },
+      { text: "Con ingenieros, construyendo sistemas robustos", scores: [0,3,1,1,0] },
+      { text: "Con el equipo de negocio, ayudándoles a entender sus datos", scores: [1,0,0,0,3] },
+      { text: "Con otros ingenieros, asegurando que la infraestructura funcione", scores: [0,1,2,2,0] },
+    ]
+  },
+  {
+    text: "¿Qué tipo de problema te resulta más atractivo?",
+    opts: [
+      { text: "¿Por qué bajaron nuestras ventas este mes?", scores: [2,0,0,0,3] },
+      { text: "¿Cómo predecimos qué clientes van a abandonar el servicio?", scores: [3,1,0,0,0] },
+      { text: "¿Cómo hacemos para que nuestro sistema responda más rápido?", scores: [0,3,0,2,0] },
+      { text: "¿Cómo aseguramos que los datos lleguen actualizados cada hora?", scores: [0,0,3,1,0] },
+      { text: "¿Cómo sabemos si nuestro modelo sigue siendo confiable con el tiempo?", scores: [1,1,0,3,0] },
+    ]
+  },
+  {
+    text: "¿Cómo prefieres medir el éxito de tu trabajo?",
+    opts: [
+      { text: "Por la precisión y validez de mis análisis o modelos", scores: [3,0,0,0,1] },
+      { text: "Por el impacto en decisiones de negocio que generé", scores: [1,0,0,0,3] },
+      { text: "Por la estabilidad y disponibilidad de los sistemas que construí", scores: [0,2,2,2,0] },
+      { text: "Por la velocidad y confiabilidad con que llegan los datos", scores: [0,0,3,0,1] },
+      { text: "Por cuántos usuarios están usando lo que desarrollé", scores: [0,3,0,1,0] },
+    ]
+  },
+];
+
+const ROLE_META = [
+  { label: 'Data Scientist',    color: '#00FFB2', desc: 'Tu perfil es curioso y analítico. Disfrutas explorar datos, encontrar patrones y construir modelos que explican o predicen fenómenos. La estadística y la experimentación son tu zona de confort.', note: 'Roles afines: Research Scientist, Applied Scientist, Analista Cuantitativo.' },
+  { label: 'ML Engineer',       color: '#A78BFA', desc: 'Eres un perfil constructor orientado a resultados reales. Te importa que las cosas funcionen en el mundo real — que sean confiables, rápidas y escalables. Disfrutas llevar ideas al terreno de la práctica.', note: 'Roles afines: AI Engineer, Ingeniero de Software con especialización en IA, Inference Engineer.' },
+  { label: 'Data Engineer',     color: '#38BDF8', desc: 'Tu foco está en la infraestructura invisible que hace que todo funcione. Eres ordenado y sistemático — te importa que los datos lleguen limpios, completos y a tiempo. Sin ti, el resto del equipo no puede trabajar.', note: 'Roles afines: Ingeniero de Plataforma de Datos, Arquitecto de Datos, Streaming Engineer.' },
+  { label: 'MLOps Engineer',    color: '#FB7185', desc: 'Eres un automatizador nato. Te frustra lo manual y repetitivo, y disfrutas construir sistemas que se cuidan solos. Eres el puente entre los que crean modelos y los que necesitan que funcionen siempre.', note: 'Roles afines: AI Platform Engineer, Site Reliability Engineer (ML), DevOps especializado en IA.' },
+  { label: 'Analytics Engineer',color: '#FCD34D', desc: 'Eres un traductor entre el mundo de los datos y el mundo del negocio. Disfrutas que la información sea confiable, bien documentada y fácil de entender. Tu mayor satisfacción es que alguien tome una buena decisión gracias a tu trabajo.', note: 'Roles afines: BI Engineer, Analista de Datos Senior, Data Modeler.' },
+];
+
+let currentQ = 0;
+let answers = new Array(QUESTIONS.length).fill(null);
+let quizChart = null;
+
+function renderQuiz() {
+  const body = document.getElementById('quiz-body');
+  const q = QUESTIONS[currentQ];
+  const pct = ((currentQ) / QUESTIONS.length) * 100;
+
+  let optsHtml = '';
+  q.opts.forEach(function(o, i) {
+    const sel = answers[currentQ] === i ? 'selected' : '';
+    optsHtml += '<button class="q-opt ' + sel + '" onclick="selectAnswer(' + i + ')">' + o.text + '</button>';
+  });
+
+  let navRight = '';
+  if (currentQ < QUESTIONS.length - 1) {
+    const dis = answers[currentQ] === null ? 'disabled' : '';
+    navRight = '<button class="quiz-btn primary" onclick="nextQ()" ' + dis + '>Siguiente \u2192</button>';
+  } else {
+    const dis = answers[currentQ] === null ? 'disabled' : '';
+    navRight = '<button class="quiz-btn primary" onclick="showResult()" ' + dis + '>Ver mi perfil \u2192</button>';
+  }
+
+  const prevDis = currentQ === 0 ? 'disabled' : '';
+
+  body.innerHTML =
+    '<div class="quiz-progress"><div class="quiz-progress-bar" style="width:' + pct + '%"></div></div>' +
+    '<div class="q-block">' +
+      '<div class="q-num">Pregunta ' + (currentQ + 1) + ' de ' + QUESTIONS.length + '</div>' +
+      '<div class="q-text">' + q.text + '</div>' +
+      '<div class="q-options">' + optsHtml + '</div>' +
+    '</div>' +
+    '<div class="quiz-nav">' +
+      '<button class="quiz-btn" onclick="prevQ()" ' + prevDis + '>\u2190 Anterior</button>' +
+      '<span style="font-size:11px;color:var(--muted)">' + (currentQ + 1) + ' / ' + QUESTIONS.length + '</span>' +
+      navRight +
+    '</div>';
+}
+
+function selectAnswer(i) {
+  answers[currentQ] = i;
+  renderQuiz();
+}
+
+function nextQ() {
+  if (answers[currentQ] === null) return;
+  currentQ++;
+  renderQuiz();
+}
+
+function prevQ() {
+  if (currentQ > 0) { currentQ--; renderQuiz(); }
+}
+
+function showResult() {
+  const totals = [0, 0, 0, 0, 0];
+  answers.forEach((ans, qi) => {
+    if (ans === null) return;
+    QUESTIONS[qi].opts[ans].scores.forEach((s, ri) => totals[ri] += s);
+  });
+
+  const max = Math.max(...totals);
+  const winnerIdx = totals.indexOf(max);
+  const winner = ROLE_META[winnerIdx];
+
+  document.getElementById('quiz-container').style.display = 'none';
+  const resultEl = document.getElementById('quiz-result');
+  resultEl.style.display = 'block';
+
+  document.getElementById('result-title').textContent = `Tu perfil: ${winner.label}`;
+  document.getElementById('result-title').style.color = winner.color;
+  document.getElementById('result-subtitle').textContent = 'Basado en tus respuestas · escala referencial';
+  document.getElementById('result-desc').textContent = winner.desc;
+  document.getElementById('result-note').innerHTML = `<strong>¿Qué sigue?</strong> ${winner.note}`;
+
+  // Score bars
+  const scoresList = document.getElementById('scores-list');
+  scoresList.innerHTML = '';
+  const sorted = ROLE_META.map((r, i) => ({ ...r, score: totals[i] }))
+    .sort((a, b) => b.score - a.score);
+  sorted.forEach(r => {
+    const pct = Math.round((r.score / (max || 1)) * 100);
+    scoresList.innerHTML += `
+      <div class="score-bar-wrap">
+        <div class="score-bar-label">${r.label}</div>
+        <div class="score-bar-bg"><div class="score-bar-fill" style="width:${pct}%;background:${r.color}"></div></div>
+        <div class="score-bar-val">${r.score}pt</div>
+      </div>`;
+  });
+
+  // Radar del resultado
+  if (quizChart) { quizChart.destroy(); quizChart = null; }
+
+  // Normalizar scores a escala 0-10 para el radar
+  const radarData = ROLE_META.map((r, i) => Math.min(10, Math.round((totals[i] / (max || 1)) * 10)));
+
+  quizChart = new Chart(document.getElementById('cq'), {
+    type: 'radar',
+    data: {
+      labels: ROLE_META.map(r => r.label),
+      datasets: [{
+        label: 'Tu perfil',
+        data: radarData,
+        borderColor: winner.color,
+        backgroundColor: hexToRgba(winner.color, 0.15),
+        borderWidth: 2.5,
+        pointBackgroundColor: winner.color,
+        pointBorderColor: '#fff',
+        pointBorderWidth: 1,
+        pointRadius: 2,
+        pointHoverRadius: 5,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.raw}/10` } } },
+      scales: { r: {
+        min: 0, max: 10,
+        circular: false,
+        ticks: { display: false, backdropColor: 'transparent' },
+        grid: { color: 'rgba(255,255,255,0.06)', circular: false },
+        angleLines: { color: 'rgba(255,255,255,0.1)' },
+        pointLabels: { font: { size: 11, family: "'DM Mono',monospace" }, color: '#4A5A7A', padding: 8 }
+      }}
+    }
+  });
+}
+
+function resetQuiz() {
+  currentQ = 0;
+  answers = new Array(QUESTIONS.length).fill(null);
+  if (quizChart) { quizChart.destroy(); quizChart = null; }
+  document.getElementById('quiz-container').style.display = 'block';
+  document.getElementById('quiz-result').style.display = 'none';
+  renderQuiz();
+}
+
+function initQuiz() {
+  renderQuiz();
+}
+// ===================== END QUIZ =====================
+
+buildView('v2');
+</script>
+</body>
+</html>
